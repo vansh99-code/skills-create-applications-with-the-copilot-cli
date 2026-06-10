@@ -25,6 +25,21 @@ function divide(a, b) {
   return a / b;
 }
 
+// Additional operations requested in issue #3
+function modulo(a, b) {
+  if (b === 0) throw new Error('Modulo by zero');
+  return a % b;
+}
+
+function power(base, exponent) {
+  return Math.pow(base, exponent);
+}
+
+function squareRoot(n) {
+  if (n < 0) throw new Error('Square root of negative number');
+  return Math.sqrt(n);
+}
+
 // CLI helpers
 function isNumber(n) {
   return typeof n === 'number' && !Number.isNaN(n) && Number.isFinite(n);
@@ -42,13 +57,16 @@ function compute(op, a, b) {
     case 'subtract': case '-': return subtract(a, b);
     case 'multiply': case '*': case 'x': case 'X': return multiply(a, b);
     case 'divide': case '/': return divide(a, b);
+    case 'mod': case '%': return modulo(a, b);
+    case 'pow': case '^': return power(a, b);
+    case 'sqrt': return squareRoot(a);
     default: throw new Error(`Unknown operation: ${op}`);
   }
 }
 
 function printUsage() {
   console.log('Usage: node src/calculator.js <operation> <a> <b>');
-  console.log('Operations: add(+), subtract(-), multiply(* or x), divide(/)');
+  console.log('Operations: add(+), subtract(-), multiply(* or x), divide(/), mod(%), pow(^), sqrt');
   console.log("Or run 'node src/calculator.js interactive' to use the prompt.");
 }
 
@@ -64,13 +82,19 @@ function startInteractive() {
     if (raw === 'exit' || raw === 'quit') { rl.close(); return; }
     if (raw === 'help') { printUsage(); rl.prompt(); return; }
     const parts = raw.split(/\s+/);
-    if (parts.length < 3) {
-      console.log('Expected: <operation> <a> <b>'); rl.prompt(); return;
-    }
-    const [op, as, bs] = parts;
+    const op = parts[0];
     try {
-      const a = parseNum(as);
-      const b = parseNum(bs);
+      if (op === 'sqrt') {
+        if (parts.length < 2) { console.log('Expected: sqrt <n>'); rl.prompt(); return; }
+        const a = parseNum(parts[1]);
+        const res = compute(op, a);
+        console.log(res);
+        rl.prompt();
+        return;
+      }
+      if (parts.length < 3) { console.log('Expected: <operation> <a> <b>'); rl.prompt(); return; }
+      const a = parseNum(parts[1]);
+      const b = parseNum(parts[2]);
       const res = compute(op, a, b);
       console.log(res);
     } catch (err) {
@@ -91,9 +115,17 @@ if (require.main === module) {
     startInteractive();
   } else if (argv[0] === 'interactive') {
     startInteractive();
-  } else if (argv.length >= 3) {
+  } else {
     const op = argv[0];
     try {
+      if (op === 'sqrt') {
+        if (argv.length < 2) { console.error('Not enough arguments for sqrt.'); printUsage(); process.exit(1); }
+        const a = parseNum(argv[1]);
+        const res = compute(op, a);
+        console.log(res);
+        process.exit(0);
+      }
+      if (argv.length < 3) { console.error('Not enough arguments.'); printUsage(); process.exit(1); }
       const a = parseNum(argv[1]);
       const b = parseNum(argv[2]);
       const res = compute(op, a, b);
@@ -104,11 +136,7 @@ if (require.main === module) {
       printUsage();
       process.exit(1);
     }
-  } else {
-    console.error('Not enough arguments.');
-    printUsage();
-    process.exit(1);
   }
 }
 
-module.exports = { add, subtract, multiply, divide };
+module.exports = { add, subtract, multiply, divide, modulo, power, squareRoot };
